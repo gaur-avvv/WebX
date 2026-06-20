@@ -1,0 +1,60 @@
+# .dockerignore — excludes from Docker build context
+# Mirrors .gitignore to minimize build context size
+
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Node dependencies (installed inside container)
+**/node_modules/
+
+# Build outputs (rebuilt inside container)
+**/.next/
+**/dist/
+**/build/
+**/.turbo/
+
+# Python virtual envs (installed inside container)
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/venv/
+**/env/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/htmlcov/
+**/.coverage
+
+# Go build artifacts
+**/bin/
+**/tmp/
+
+# Docs
+*.md
+!README.md
+
+# Test coverage
+**/coverage/
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform state
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+
+# CI/CD (not needed in containers)
+.github/
+
+# Logs
+*.log
+logs/

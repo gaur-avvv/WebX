@@ -1,0 +1,61 @@
+###############################################################################
+# Project Zenith — Prometheus Configuration
+###############################################################################
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+  external_labels:
+    environment: "local"
+    project: "zenith"
+
+# Alerting rules
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# ─────────────────────────────────────────────
+# SCRAPE CONFIGURATIONS
+# ─────────────────────────────────────────────
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Satellite Service (Node.js)
+  - job_name: "satellite-service"
+    static_configs:
+      - targets: ["satellite-service:4001"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Planetary Service (Python FastAPI)
+  - job_name: "planetary-service"
+    static_configs:
+      - targets: ["planetary-service:4002"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Notification Service (Go)
+  - job_name: "notification-service"
+    static_configs:
+      - targets: ["notification-service:4003"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # PostgreSQL via postgres_exporter (add if needed)
+  # - job_name: "postgres"
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]
+
+  # Redis via redis_exporter (add if needed)
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]

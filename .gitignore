@@ -1,0 +1,139 @@
+# ─────────────────────────────────────────────
+# Git
+# ─────────────────────────────────────────────
+.git/
+*.orig
+
+# ─────────────────────────────────────────────
+# Environment files (NEVER commit secrets)
+# ─────────────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# ─────────────────────────────────────────────
+# Node.js
+# ─────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ─────────────────────────────────────────────
+# Next.js
+# ─────────────────────────────────────────────
+apps/web/.next/
+apps/web/out/
+
+# ─────────────────────────────────────────────
+# TypeScript
+# ─────────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ─────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+apps/planetary-service/.venv/
+apps/planetary-service/venv/
+apps/planetary-service/.env/
+apps/planetary-service/env/
+*.egg-info/
+dist/
+build/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# ─────────────────────────────────────────────
+# Go
+# ─────────────────────────────────────────────
+apps/notification-service/bin/
+apps/notification-service/tmp/
+
+# ─────────────────────────────────────────────
+# Turborepo
+# ─────────────────────────────────────────────
+.turbo/
+
+# ─────────────────────────────────────────────
+# Coverage reports
+# ─────────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+
+# ─────────────────────────────────────────────
+# Cypress
+# ─────────────────────────────────────────────
+apps/web/cypress/screenshots/
+apps/web/cypress/videos/
+
+# ─────────────────────────────────────────────
+# Editors
+# ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# ─────────────────────────────────────────────
+# Docker volumes (if mapped locally)
+# ─────────────────────────────────────────────
+.docker/
+
+# ─────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────
+*.log
+logs/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ─────────────────────────────────────────────
+# Terraform
+# ─────────────────────────────────────────────
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/.terraform.lock.hcl
+infra/terraform/crash.log
+infra/terraform/crash.*.log
+
+# ─────────────────────────────────────────────
+# Prisma generated (should be committed, listed for clarity)
+# Note: prisma/migrations/ SHOULD be committed
+# ─────────────────────────────────────────────
+# apps/satellite-service/src/generated/  # DO commit generated client
+
+# ─────────────────────────────────────────────
+# OS
+# ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

@@ -1,0 +1,32 @@
+###############################################################################
+# docker-compose.override.yml
+#
+# Local developer overrides. This file is automatically merged by Docker Compose
+# when running `docker-compose up`. Do NOT commit secrets here.
+#
+# This file enables direct port mapping of internal services for local dev tools
+# and relaxes some restrictions that are important only in production.
+###############################################################################
+
+version: "3.9"
+
+services:
+  # Expose postgres to local DB clients (TablePlus, DBeaver, etc.)
+  postgres:
+    ports:
+      - "5432:5432"
+
+  # Expose Redis to local tools (RedisInsight, etc.)
+  redis:
+    ports:
+      - "6379:6379"
+
+  # Expose Kafka for local producers/consumers
+  kafka:
+    ports:
+      - "29092:29092"
+
+  # MongoDB Compass access
+  mongodb:
+    ports:
+      - "27017:27017"

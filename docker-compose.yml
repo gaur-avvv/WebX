@@ -1,0 +1,585 @@
+###############################################################################
+# Project Zenith — Docker Compose (Local Development)
+# 
+# This file provisions the complete local infrastructure stack:
+#   - PostgreSQL 16 (primary + read replica)
+#   - Redis 7 (cluster mode via single node for local dev)
+#   - Apache Kafka + Zookeeper (event streaming)
+#   - MongoDB 7 (analytics)
+#   - RabbitMQ 3.13 (task queues)
+#   - Application services (web, satellite, planetary, notification)
+#   - Observability: Prometheus, Grafana
+#
+# Usage:
+#   docker-compose up -d            # Start all services
+#   docker-compose up -d postgres   # Start only PostgreSQL
+#   docker-compose logs -f web      # Tail web service logs
+#   docker-compose down -v          # Stop and remove volumes
+###############################################################################
+
+version: "3.9"
+
+# ─────────────────────────────────────────────
+# NETWORKS
+# ─────────────────────────────────────────────
+networks:
+  zenith-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ─────────────────────────────────────────────
+# NAMED VOLUMES (persistent data)
+# ─────────────────────────────────────────────
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_data:
+    driver: local
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
+  mongodb_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ─────────────────────────────────────────────
+# SERVICES
+# ─────────────────────────────────────────────
+services:
+
+  # ───────────────────────────────
+  # DATABASE: PostgreSQL 16 Primary
+  # ───────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: zenith-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zenith}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-zenith_db}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      # Enable WAL for logical replication
+      POSTGRES_HOST_AUTH_METHOD: md5
+    command: >
+      postgres
+        -c wal_level=logical
+        -c max_wal_senders=3
+        -c max_replication_slots=3
+        -c shared_preload_libraries=pg_stat_statements
+        -c pg_stat_statements.track=all
+        -c log_min_duration_statement=1000
+        -c log_connections=on
+        -c log_disconnections=on
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - zenith-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zenith} -d ${POSTGRES_DB:-zenith_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.zenith.service=postgres"
+      - "com.zenith.tier=data"
+
+  # ───────────────────────────────
+  # DATABASE: PostgreSQL Read Replica
+  # ───────────────────────────────
+  postgres-replica:
+    image: postgres:16-alpine
+    container_name: zenith-postgres-replica
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zenith}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-zenith_db}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    command: >
+      bash -c "
+        until pg_isready -h postgres -U ${POSTGRES_USER:-zenith}; do sleep 2; done;
+        if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+          pg_basebackup -h postgres -U ${POSTGRES_USER:-zenith} -D /var/lib/postgresql/data -P -Xs -R
+        fi
+        postgres
+      "
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_REPLICA_PORT:-5433}:5432"
+    networks:
+      - zenith-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zenith}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "com.zenith.service=postgres-replica"
+      - "com.zenith.tier=data"
+
+  # ───────────────────────────────
+  # CACHE: Redis 7
+  # ───────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: zenith-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+        --save 900 1
+        --save 300 10
+        --save 60 10000
+        --appendonly yes
+        --appendfsync everysec
+        --loglevel notice
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - zenith-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "com.zenith.service=redis"
+      - "com.zenith.tier=cache"
+
+  # ───────────────────────────────
+  # MESSAGE BROKER: ZooKeeper (Kafka dependency)
+  # ───────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zenith-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_MAX_CLIENT_CNXNS: 60
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=*"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+    networks:
+      - zenith-net
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 | grep Mode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.zenith.service=zookeeper"
+      - "com.zenith.tier=messaging"
+
+  # ───────────────────────────────
+  # MESSAGE BROKER: Apache Kafka
+  # ───────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: zenith-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "${KAFKA_PORT:-29092}:29092"
+      - "9101:9101"
+    networks:
+      - zenith-net
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "com.zenith.service=kafka"
+      - "com.zenith.tier=messaging"
+
+  # ───────────────────────────────
+  # Kafka topic initialization
+  # ───────────────────────────────
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: zenith-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo 'Creating Kafka topics...'
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.iss.position --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.satellite.positions --partitions 6 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.satellite.passes --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.planetary.ephemeris --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.tle.refresh --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic zenith.notifications --partitions 3 --replication-factor 1 &&
+        echo 'All Kafka topics created successfully!'
+        kafka-topics --bootstrap-server kafka:9092 --list
+      "
+    networks:
+      - zenith-net
+    restart: "no"
+
+  # ───────────────────────────────
+  # MESSAGE BROKER: RabbitMQ 3.13
+  # ───────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: zenith-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-zenith}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+      RABBITMQ_DEFAULT_VHOST: zenith
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infra/docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    networks:
+      - zenith-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.zenith.service=rabbitmq"
+      - "com.zenith.tier=messaging"
+
+  # ───────────────────────────────
+  # DATABASE: MongoDB 7 (Analytics)
+  # ───────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: zenith-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-zenith}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD is required}
+      MONGO_INITDB_DATABASE: zenith_analytics
+    command: ["--wiredTigerCacheSizeGB", "0.5", "--logpath", "/var/log/mongodb/mongod.log"]
+    volumes:
+      - mongodb_data:/data/db
+      - ./infra/docker/mongodb/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    networks:
+      - zenith-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.zenith.service=mongodb"
+      - "com.zenith.tier=data"
+
+  # ───────────────────────────────────────────────────
+  # APPLICATION SERVICES
+  # ───────────────────────────────────────────────────
+
+  # Next.js Frontend
+  web:
+    build:
+      context: .
+      dockerfile: ./infra/docker/web/Dockerfile
+      target: development
+    container_name: zenith-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_CESIUM_ION_TOKEN: ${NEXT_PUBLIC_CESIUM_ION_TOKEN:?Cesium Ion token required}
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4001
+      NEXT_PUBLIC_WS_URL: ws://localhost:4003
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    volumes:
+      - ./apps/web:/app/apps/web:delegated
+      - ./packages:/app/packages:delegated
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      - zenith-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "com.zenith.service=web"
+      - "com.zenith.tier=frontend"
+    profiles:
+      - apps
+
+  # Node.js Satellite Microservice
+  satellite-service:
+    build:
+      context: .
+      dockerfile: ./infra/docker/satellite-service/Dockerfile
+      target: development
+    container_name: zenith-satellite-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 4001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-zenith}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zenith_db}?schema=public
+      DATABASE_REPLICA_URL: postgresql://${POSTGRES_USER:-zenith}:${POSTGRES_PASSWORD}@postgres-replica:5432/${POSTGRES_DB:-zenith_db}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      KAFKA_BROKERS: kafka:9092
+      CELESTRAK_API_URL: ${CELESTRAK_API_URL:-https://celestrak.org}
+      OPENNOTIFY_API_URL: ${OPENNOTIFY_API_URL:-http://api.open-notify.org}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # ISS polling interval in milliseconds (default: 5 seconds)
+      ISS_POLLING_INTERVAL_MS: ${ISS_POLLING_INTERVAL_MS:-5000}
+      # TLE cache TTL in seconds (default: 2 hours)
+      TLE_CACHE_TTL_SECONDS: ${TLE_CACHE_TTL_SECONDS:-7200}
+    volumes:
+      - ./apps/satellite-service:/app/apps/satellite-service:delegated
+      - ./packages:/app/packages:delegated
+      - /app/apps/satellite-service/node_modules
+    ports:
+      - "${SATELLITE_SERVICE_PORT:-4001}:4001"
+    networks:
+      - zenith-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "com.zenith.service=satellite-service"
+      - "com.zenith.tier=backend"
+    profiles:
+      - apps
+
+  # Python FastAPI Planetary Microservice
+  planetary-service:
+    build:
+      context: ./apps/planetary-service
+      dockerfile: ../../infra/docker/planetary-service/Dockerfile
+      target: development
+    container_name: zenith-planetary-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: development
+      PORT: 4002
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zenith}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zenith_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      KAFKA_BROKERS: kafka:9092
+      NASA_HORIZONS_API_URL: ${NASA_HORIZONS_API_URL:-https://ssd.jpl.nasa.gov/api/horizons.api}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Cache TTL for planetary data in seconds (default: 5 minutes)
+      PLANETARY_CACHE_TTL_SECONDS: ${PLANETARY_CACHE_TTL_SECONDS:-300}
+    volumes:
+      - ./apps/planetary-service:/app:delegated
+    ports:
+      - "${PLANETARY_SERVICE_PORT:-4002}:4002"
+    networks:
+      - zenith-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4002/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "com.zenith.service=planetary-service"
+      - "com.zenith.tier=backend"
+    profiles:
+      - apps
+
+  # Go Notification Microservice
+  notification-service:
+    build:
+      context: ./apps/notification-service
+      dockerfile: ../../infra/docker/notification-service/Dockerfile
+      target: development
+    container_name: zenith-notification-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: development
+      PORT: 4003
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-4003}:4003"
+    networks:
+      - zenith-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4003/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.zenith.service=notification-service"
+      - "com.zenith.tier=backend"
+    profiles:
+      - apps
+
+  # ───────────────────────────────────────────────────
+  # OBSERVABILITY STACK
+  # ───────────────────────────────────────────────────
+
+  # Prometheus — metrics collection
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: zenith-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./infra/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - zenith-net
+    depends_on:
+      - satellite-service
+    profiles:
+      - observability
+
+  # Grafana — dashboards & visualization
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: zenith-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-worldmap-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - zenith-net
+    depends_on:
+      - prometheus
+    profiles:
+      - observability
+
+  # Kafka UI — Kafka topic & consumer group management
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: zenith-kafka-ui
+    restart: unless-stopped
+    environment:
+      KAFKA_CLUSTERS_0_NAME: zenith-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8080:8080"
+    networks:
+      - zenith-net
+    depends_on:
+      kafka:
+        condition: service_healthy
+    profiles:
+      - tools
+
+  # Redis Commander — Redis web UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: zenith-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: "zenith-redis:redis:6379:0:${REDIS_PASSWORD}"
+    ports:
+      - "8081:8081"
+    networks:
+      - zenith-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - tools

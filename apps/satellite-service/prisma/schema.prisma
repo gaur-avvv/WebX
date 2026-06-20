@@ -1,0 +1,215 @@
+// This is the Prisma schema for the Satellite Service.
+// It covers: Users, ObserverLocations, TLE data, Satellite metadata,
+// predicted passes, and observation logs.
+//
+// Run `prisma migrate dev` to apply locally.
+// Run `prisma migrate deploy` in CI/production.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins", "fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Read replica for heavy queries (pass predictions, history)
+  directUrl = env("DATABASE_REPLICA_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  GUEST
+  OBSERVER
+  ADMIN
+}
+
+enum SatelliteCategory {
+  SPACE_STATION
+  WEATHER
+  NAVIGATION_GPS
+  NAVIGATION_GLONASS
+  NAVIGATION_GALILEO
+  COMMUNICATION
+  EARTH_OBSERVATION
+  SCIENTIFIC
+  DEBRIS
+  UNKNOWN
+}
+
+// ─────────────────────────────────────────────
+// USER MODEL
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(320)
+  username     String   @unique @db.VarChar(64)
+  /// Argon2id hash — NEVER expose this field via API
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(OBSERVER)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  /// IANA timezone identifier, e.g., "America/New_York"
+  timezone     String?  @db.VarChar(64)
+
+  // Relationships
+  locations    ObserverLocation[]
+  observations ObservationRecord[]
+  refreshTokens RefreshToken[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // Soft delete
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// OBSERVER LOCATION
+// ─────────────────────────────────────────────
+
+model ObserverLocation {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @map("user_id") @db.Uuid
+  name        String  @db.VarChar(128)
+  /// WGS-84 latitude in decimal degrees (-90 to +90)
+  latitude    Decimal @db.Decimal(11, 8)
+  /// WGS-84 longitude in decimal degrees (-180 to +180)
+  longitude   Decimal @db.Decimal(11, 8)
+  /// Elevation above sea level in meters
+  elevationM  Float   @default(0) @map("elevation_m")
+  /// IANA timezone identifier
+  timezone    String  @db.VarChar(64)
+  isDefault   Boolean @default(false) @map("is_default")
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  observations ObservationRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("observer_locations")
+}
+
+// ─────────────────────────────────────────────
+// SATELLITE CATALOG
+// ─────────────────────────────────────────────
+
+/// Canonical satellite record (one per NORAD ID)
+model Satellite {
+  /// NORAD Catalog Number (unique identifier assigned by US Space Command)
+  noradId               Int               @id @map("norad_id")
+  /// International Designator (COSPAR ID), e.g., "1998-067A" for ISS
+  internationalDesignator String?         @map("international_designator") @db.VarChar(11)
+  name                  String            @db.VarChar(128)
+  /// Human-readable alternate names (common name, callsign, etc.)
+  aliases               String[]
+  category              SatelliteCategory @default(UNKNOWN)
+  /// Country or organization of origin
+  country               String?           @db.VarChar(64)
+  launchDate            DateTime?         @map("launch_date") @db.Date
+  /// Decay/re-entry date if known
+  decayDate             DateTime?         @map("decay_date") @db.Date
+  /// Orbital period in minutes (from last TLE)
+  orbitalPeriodMin      Float?            @map("orbital_period_min")
+  /// Inclination in degrees (from last TLE)
+  inclinationDeg        Float?            @map("inclination_deg")
+  /// Mean altitude in km (from last TLE)
+  meanAltitudeKm        Float?            @map("mean_altitude_km")
+  /// Whether this satellite is actively tracked / of interest
+  isActive              Boolean           @default(true) @map("is_active")
+
+  tleRecords   TLERecord[]
+  observations ObservationRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([category])
+  @@index([isActive])
+  @@map("satellites")
+}
+
+// ─────────────────────────────────────────────
+// TWO-LINE ELEMENT (TLE) DATA
+// ─────────────────────────────────────────────
+
+/// Historical TLE records fetched from CelesTrak. One record per fetch cycle.
+/// The most recent record is used for propagation.
+model TLERecord {
+  id        String @id @default(uuid()) @db.Uuid
+  noradId   Int    @map("norad_id")
+  /// TLE Line 1 (exactly 69 characters per the AFSPC format)
+  line1     String @db.Char(69)
+  /// TLE Line 2 (exactly 69 characters per the AFSPC format)
+  line2     String @db.Char(69)
+  /// Epoch derived from TLE line 1 field (columns 19-32)
+  epoch     DateTime
+  /// Source URL or identifier (e.g., "celestrak/stations")
+  source    String   @default("celestrak") @db.VarChar(128)
+  /// When this TLE was fetched from the external source
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  satellite Satellite @relation(fields: [noradId], references: [noradId], onDelete: Cascade)
+
+  @@index([noradId, fetchedAt(sort: Desc)])
+  @@index([epoch])
+  @@map("tle_records")
+}
+
+// ─────────────────────────────────────────────
+// OBSERVATION RECORDS
+// ─────────────────────────────────────────────
+
+/// A logged observation of a satellite by a user
+model ObservationRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  noradId    Int      @map("norad_id")
+  locationId String?  @map("location_id") @db.Uuid
+  observedAt DateTime @map("observed_at")
+
+  /// Maximum elevation reached during this pass (degrees)
+  maxElevationDeg Float?  @map("max_elevation_deg")
+  /// Duration of visibility in seconds
+  durationSec     Int?    @map("duration_sec")
+  /// User rating of the observation (1–5)
+  rating          Int?    @db.SmallInt
+  notes           String? @db.Text
+
+  // Observing conditions (JSONB for flexibility)
+  /// JSON: { transparency, seeing, tempC, windKph, cloudPct }
+  conditions Json?
+
+  user      User              @relation(fields: [userId], references: [id])
+  satellite Satellite         @relation(fields: [noradId], references: [noradId])
+  location  ObserverLocation? @relation(fields: [locationId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, observedAt(sort: Desc)])
+  @@index([noradId, observedAt(sort: Desc)])
+  @@map("observation_records")
+}
