@@ -16,7 +16,7 @@ WORKDIR /app
 # go.sum may not exist in fresh repos — go mod tidy will generate it
 COPY go.mod ./
 COPY go.su[m] ./
-RUN go mod tidy && go mod download && go mod verify
+RUN go mod download && go mod verify
 
 # Copy source and build
 COPY . .
@@ -38,7 +38,7 @@ RUN go install github.com/air-verse/air@latest
 
 COPY go.mod ./
 COPY go.su[m] ./
-RUN go mod tidy && go mod download
+RUN go mod download
 
 COPY . .
 
