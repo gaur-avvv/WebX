@@ -6,8 +6,7 @@
 // Run `prisma migrate deploy` in CI/production.
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["relationJoins", "fullTextSearch"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
