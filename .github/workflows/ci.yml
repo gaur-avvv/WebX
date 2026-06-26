@@ -253,10 +253,10 @@ jobs:
             dockerfile: "./infra/docker/satellite-service/Dockerfile"
           - name: planetary-service
             context: "./apps/planetary-service"
-            dockerfile: "../../infra/docker/planetary-service/Dockerfile"
+            dockerfile: "./infra/docker/planetary-service/Dockerfile"
           - name: notification-service
             context: "./apps/notification-service"
-            dockerfile: "../../infra/docker/notification-service/Dockerfile"
+            dockerfile: "./infra/docker/notification-service/Dockerfile"
     steps:
       - uses: actions/checkout@v4
 
