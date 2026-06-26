@@ -50,8 +50,8 @@ export const prisma = new PrismaClient({
 });
 
 // Forward Prisma events to Pino
-prisma.$on('error', (e) => logger.error(e, 'Prisma error'));
-prisma.$on('warn', (e) => logger.warn(e, 'Prisma warning'));
+prisma.$on('error', (e: any) => logger.error(e, 'Prisma error'));
+prisma.$on('warn', (e: any) => logger.warn(e, 'Prisma warning'));
 
 /**
  * Bootstrap and start the server.

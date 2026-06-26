@@ -135,7 +135,7 @@ async function fetchAndPersistTLE(noradId: number): Promise<TLEData> {
   const epochDate = new Date(gp.EPOCH);
 
   // Upsert satellite record and create TLE entry in a transaction
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await tx.satellite.upsert({
       where: { noradId },
       create: {

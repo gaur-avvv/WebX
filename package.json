@@ -33,6 +33,7 @@
     "prettier": "^3.2.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
     "rimraf": "^5.0.0",
+    "ts-jest": "^29.4.11",
     "turbo": "^2.0.0",
     "typescript": "^5.3.0"
   },

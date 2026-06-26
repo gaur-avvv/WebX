@@ -1,12 +1,12 @@
-"""
-Unit tests for the SGP4 propagation engine.
-
-These tests verify the mathematical correctness of TLE parsing, position
-propagation, look-angle computation, and pass prediction against known
-ground-truth values from public ISS ephemeris data.
-
-Reference epoch used: ISS TLE from 2024-03-01 (a recent, well-known epoch)
-"""
+/**
+ * Unit tests for the SGP4 propagation engine.
+ *
+ * These tests verify the mathematical correctness of TLE parsing, position
+ * propagation, look-angle computation, and pass prediction against known
+ * ground-truth values from public ISS ephemeris data.
+ *
+ * Reference epoch used: ISS TLE from 2024-03-01 (a recent, well-known epoch)
+ */
 
 import { parseTLE, propagateToGeodetic, computeLookAngles, predictPasses, computeOrbitPath } from '../../src/lib/sgp4';
 

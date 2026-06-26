@@ -10,9 +10,7 @@
  */
 
 import { Kafka, type Producer, type Message, CompressionTypes } from 'kafkajs';
-
 import logger from './logger';
-
 let producer: Producer | null = null;
 
 /**

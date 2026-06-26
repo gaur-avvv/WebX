@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from typing import Dict, Any
 
 import structlog
 from aiokafka import AIOKafkaProducer
+from pydantic import BaseModel, Field
 
 from .config import settings
 
@@ -13,10 +15,20 @@ log = structlog.get_logger(__name__)
 
 _producer: AIOKafkaProducer | None = None
 
+# ─── Schemas ──────────────────────────────────────────────────────────────────
+
+class PlanetaryEphemeris(BaseModel):
+    """Schema for planetary position updates."""
+    bodyName: str
+    coordinates: Dict[str, float] = Field(..., description="x, y, z in AU")
+    velocity: Dict[str, float] = Field(..., description="vx, vy, vz in AU/day")
+    epoch: str
+
 KAFKA_TOPICS = {
     "PLANETARY_EPHEMERIS": "zenith.planetary.ephemeris",
 }
 
+# ─── Producer Logic ──────────────────────────────────────────────────────────
 
 async def init_kafka_producer() -> None:
     global _producer
@@ -37,10 +49,19 @@ async def close_kafka_producer() -> None:
         _producer = None
 
 
-async def publish_event(topic: str, key: str, value: dict) -> None:  # type: ignore[type-arg]
+async def publish_event(topic: str, key: str, value: dict) -> None:
     if _producer is None:
         log.warning("Kafka producer not available — event dropped", topic=topic)
         return
+
+    # Validate using Pydantic
+    if topic == KAFKA_TOPICS["PLANETARY_EPHEMERIS"]:
+        try:
+            PlanetaryEphemeris(**value)
+        except Exception as e:
+            log.error("Planetary ephemeris validation failed", topic=topic, error=str(e), value=value)
+            return
+
     try:
         await _producer.send_and_wait(topic, value=value, key=key.encode())
     except Exception as exc:

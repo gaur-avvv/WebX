@@ -90,7 +90,7 @@ satelliteRouter.get(
         data: satellites,
         count: satellites.length,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       });
     } catch (err) {
       next(err);
@@ -131,7 +131,7 @@ satelliteRouter.get(
         success: true,
         data: tle,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       };
 
       res.setHeader('Cache-Control', 'public, max-age=3600');
@@ -164,7 +164,7 @@ satelliteRouter.get(
         success: true,
         data: position,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       };
 
       res.setHeader('Cache-Control', 'no-store'); // Real-time data — never cache at CDN
@@ -220,7 +220,7 @@ satelliteRouter.get(
         predictionDays: days,
         minElevationDeg: minElevation,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       });
     } catch (err) {
       next(err);
@@ -263,7 +263,7 @@ satelliteRouter.get(
         data: path,
         count: path.length,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       });
     } catch (err) {
       next(err);

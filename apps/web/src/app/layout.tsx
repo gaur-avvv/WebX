@@ -3,6 +3,7 @@ import { Inter, Outfit, JetBrains_Mono } from 'next/font/google';
 
 import './globals.css';
 import { Providers } from './providers';
+import { StarsBackground } from '@/components/ui/stars-background';
 
 // ─── Google Fonts ───────────────────────────────────────────────────────────
 
@@ -81,7 +82,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://ion.cesium.com" />
       </head>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <StarsBackground>
+          <Providers>{children}</Providers>
+        </StarsBackground>
       </body>
     </html>
   );

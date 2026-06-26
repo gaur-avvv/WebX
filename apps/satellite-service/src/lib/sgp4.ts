@@ -35,9 +35,6 @@ import type {
 // CONSTANTS
 // ─────────────────────────────────────────────
 
-/** Earth's radius in kilometres (WGS-84 mean) */
-const EARTH_RADIUS_KM = 6371.0;
-
 /** Degrees per radian */
 const DEG_PER_RAD = 180 / Math.PI;
 
@@ -72,10 +69,33 @@ export interface LookAngles {
  */
 export function parseTLE(name: string, line1: string, line2: string): SatelliteRecord | null {
   try {
-    const satrec = satellite.twoline2satrec(line1.trim(), line2.trim());
+    // Trim whitespace before validation so leading/trailing spaces are tolerated.
+    const trimmedLine1 = line1.trim();
+    const trimmedLine2 = line2.trim();
+
+    // Validate TLE line format before parsing: lines must be 69 chars
+    // and start with '1 ' / '2 ' (column 1 is the line number).
+    if (!trimmedLine1.startsWith('1 ') || !trimmedLine2.startsWith('2 ')) {
+      return null;
+    }
+    if (trimmedLine1.length < 69 || trimmedLine2.length < 69) {
+      return null;
+    }
+
+    const satrec = satellite.twoline2satrec(trimmedLine1, trimmedLine2);
 
     // satrec.error > 0 means the TLE was invalid
     if (satrec.error !== 0) {
+      return null;
+    }
+
+    // Guard against NaN values from malformed but structurally-valid TLEs
+    if (
+      isNaN(satrec.no) ||
+      isNaN(satrec.ecco) ||
+      isNaN(satrec.inclo) ||
+      isNaN(satrec.nodeo)
+    ) {
       return null;
     }
 
@@ -132,9 +152,9 @@ export function propagateToGeodetic(
   const latitudeDeg = geodeticRad.latitude * DEG_PER_RAD;
   const longitudeDeg = geodeticRad.longitude * DEG_PER_RAD;
 
-  // Orbital period: T = 2π √(a³/μ)
-  // From TLE mean motion (revs/day): T = 86400 / meanMotion minutes
-  const orbitalPeriodMin = 86400 / (record.satrec.no / (2 * Math.PI));
+  // Orbital period: satrec.no is mean motion in radians per minute,
+  // so T (minutes per revolution) = 2π / no.
+  const orbitalPeriodMin = (2 * Math.PI) / record.satrec.no;
 
   return {
     coordinate: {
@@ -178,7 +198,7 @@ export function computeLookAngles(
   const observerGd: satellite.GeodeticLocation = {
     latitude: (observer.latitude / DEG_PER_RAD) as satellite.Radians,
     longitude: (observer.longitude / DEG_PER_RAD) as satellite.Radians,
-    height: ((observer.altitude ?? 0) / 1000) as satellite.Kilometers, // m → km
+    height: ((observer.altitude ?? 0) / 1000) as satellite.Kilometer, // m → km
   };
 
   // Compute look angles using satellite.js ECF-based algorithm

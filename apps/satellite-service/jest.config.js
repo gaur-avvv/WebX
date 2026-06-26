@@ -17,7 +17,7 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/server.ts', // Integration entry point — not unit tested
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 70,
       functions: 80,
@@ -25,5 +25,4 @@ module.exports = {
       statements: 80,
     },
   },
-  setupFilesAfterFramework: [],
 };

@@ -137,3 +137,7 @@ infra/terraform/crash.*.log
 ehthumbs.db
 Thumbs.db
 desktop.ini
+
+# Agent & Cache
+.gemini/
+.omc/

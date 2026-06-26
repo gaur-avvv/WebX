@@ -60,7 +60,7 @@ issRouter.get(
         success: true,
         data: position,
         timestamp: new Date().toISOString(),
-        requestId: req.id,
+        requestId: String(req.id),
       };
 
       // Cache-Control: public for CDN caching (matches Redis TTL of 5s)

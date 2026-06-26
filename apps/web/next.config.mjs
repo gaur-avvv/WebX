@@ -1,29 +1,27 @@
-import type { NextConfig } from 'next';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
-const nextConfig: NextConfig = {
-  // Enable React strict mode for catching issues early
+const require = createRequire(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
 
-  // Transpile shared monorepo packages
   transpilePackages: ['@zenith/shared-types'],
 
-  // Output standalone for Docker multi-stage builds
   output: 'standalone',
 
-  // Enable experimental features
   experimental: {
-    // Server actions are stable in Next 15+
     turbo: {
-      // Turbopack-specific config (for `next dev --turbo`)
       resolveAlias: {
         cesium: path.resolve('./node_modules/cesium'),
       },
     },
   },
 
-  // Image domains allowed for next/image
   images: {
     remotePatterns: [
       {
@@ -33,11 +31,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Webpack config for CesiumJS
-  // CesiumJS requires special handling: it uses AMD modules and
-  // needs its static assets (Workers, Assets, Widgets) copied to public/
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // CesiumJS is a heavy client-only library — exclude from server bundle
+  webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       config.externals = [
         ...(Array.isArray(config.externals) ? config.externals : [config.externals]),
@@ -46,14 +40,12 @@ const nextConfig: NextConfig = {
       return config;
     }
 
-    // Define CESIUM_BASE_URL so CesiumJS can find its static assets
     config.plugins.push(
       new webpack.DefinePlugin({
         CESIUM_BASE_URL: JSON.stringify('/cesium'),
       }),
     );
 
-    // Copy CesiumJS static assets to public/cesium/
     config.plugins.push(
       new CopyWebpackPlugin({
         patterns: [
@@ -89,14 +81,12 @@ const nextConfig: NextConfig = {
       }),
     );
 
-    // Prevent webpack from trying to process CesiumJS workers
     config.module.unknownContextCritical = false;
     config.module.unknownContextRegExp = /\/cesium\/Source\/Core\/buildModuleUrl\.js/;
 
     return config;
   },
 
-  // Security headers
   async headers() {
     return [
       {
@@ -115,7 +105,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Redirects
   async redirects() {
     return [
       {

@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 
-import type { GeoCoordinate, SatellitePositionGeodetic, SatellitePass, TLEData } from '@zenith/shared-types';
+import type { GeoCoordinate, SatellitePositionGeodetic } from '@zenith/shared-types';
 
 // ─────────────────────────────────────────────
 // State Types
