@@ -27,8 +27,8 @@ RUN npm pkg delete scripts.prepare && npm ci
 
 COPY --from=pruner /app/out/full/ .
 
-# Generate Prisma client
-RUN npx prisma generate --schema=apps/satellite-service/prisma/schema.prisma
+# Generate Prisma client (use npx to resolve local prisma binary)
+RUN npx --no-install prisma generate --schema=apps/satellite-service/prisma/schema.prisma
 
 EXPOSE 4001
 CMD ["turbo", "run", "dev", "--filter=@zenith/satellite-service"]
@@ -45,8 +45,8 @@ RUN npm pkg delete scripts.prepare && npm ci
 
 COPY --from=pruner /app/out/full/ .
 
-RUN npx prisma generate --schema=apps/satellite-service/prisma/schema.prisma
-RUN turbo run build --filter=@zenith/satellite-service
+RUN npx --no-install prisma generate --schema=apps/satellite-service/prisma/schema.prisma
+RUN npx turbo run build --filter=@zenith/satellite-service
 
 # ─────────────────────────────────────────────
 # Production runner

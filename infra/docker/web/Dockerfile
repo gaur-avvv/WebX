@@ -43,7 +43,7 @@ COPY --from=pruner /app/out/full/ .
 EXPOSE 3000
 
 # Start with Turbopack
-CMD ["turbo", "run", "dev", "--filter=@zenith/web"]
+CMD ["npx", "turbo", "run", "dev", "--filter=@zenith/web"]
 
 # ─────────────────────────────────────────────
 # Stage 4: Builder (production build)
@@ -61,7 +61,7 @@ RUN npm pkg delete scripts.prepare && npm ci
 COPY --from=pruner /app/out/full/ .
 
 # Build the Next.js app
-RUN turbo run build --filter=@zenith/web
+RUN npx turbo run build --filter=@zenith/web
 
 # ─────────────────────────────────────────────
 # Stage 5: Production runner (minimal image)
