@@ -89,7 +89,9 @@ jobs:
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
         with:
           flags: satellite-service
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -154,7 +156,9 @@ jobs:
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
         with:
           flags: planetary-service
           files: apps/planetary-service/coverage.xml
