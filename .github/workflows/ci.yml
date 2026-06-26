@@ -66,6 +66,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://zenith_test:test_password@localhost:5432/zenith_test_db
+      DATABASE_REPLICA_URL: postgresql://zenith_test:test_password@localhost:5432/zenith_test_db
       REDIS_URL: redis://localhost:6379
       JWT_SECRET: test_secret_key_at_least_32_chars_long
       NODE_ENV: test

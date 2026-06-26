@@ -1,8 +1,13 @@
 'use client';
 
 import { useSatelliteWebSocket } from '@/hooks/useSatelliteWebSocket';
-import { GlobeView } from '@/components/GlobeView';
+import dynamic from 'next/dynamic';
 import { HUD } from '@/components/HUD';
+
+const GlobeView = dynamic(
+  () => import('@/components/GlobeView').then((mod) => mod.GlobeView),
+  { ssr: false }
+);
 
 export default function Page() {
   // Initialize the WebSocket connection and data stream
