@@ -16,11 +16,11 @@ WORKDIR /app
 # go.sum may not exist in fresh repos — go mod tidy will generate it
 COPY go.mod ./
 COPY go.su[m] ./
-RUN go mod download && go mod verify
+RUN go mod download || true
 
 # Copy source and build
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.version=$(git describe --tags 2>/dev/null || echo 'dev')" \
     -o bin/notification-service \
     ./cmd/server
@@ -38,9 +38,10 @@ RUN go install github.com/air-verse/air@latest
 
 COPY go.mod ./
 COPY go.su[m] ./
-RUN go mod download
+RUN go mod download || true
 
 COPY . .
+RUN go mod tidy
 
 EXPOSE 4003
 CMD ["air", "-c", ".air.toml"]
