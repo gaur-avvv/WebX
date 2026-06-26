@@ -4,7 +4,7 @@ module.exports = {
   semi: true,
   singleQuote: true,
   jsxSingleQuote: false,
-  trailingComma: "all",
+  trailingComma: 'all',
   printWidth: 100,
   tabWidth: 2,
   useTabs: false,
@@ -12,36 +12,36 @@ module.exports = {
   // Bracket handling
   bracketSpacing: true,
   bracketSameLine: false,
-  arrowParens: "always",
+  arrowParens: 'always',
 
   // End of line
-  endOfLine: "lf",
+  endOfLine: 'lf',
 
   // File-specific overrides
   overrides: [
     {
-      files: ["*.json", "*.jsonc"],
+      files: ['*.json', '*.jsonc'],
       options: {
         printWidth: 200,
         singleQuote: false,
       },
     },
     {
-      files: ["*.md", "*.mdx"],
+      files: ['*.md', '*.mdx'],
       options: {
-        proseWrap: "always",
+        proseWrap: 'always',
         printWidth: 80,
       },
     },
     {
-      files: ["*.yaml", "*.yml"],
+      files: ['*.yaml', '*.yml'],
       options: {
         singleQuote: false,
-        proseWrap: "preserve",
+        proseWrap: 'preserve',
       },
     },
   ],
 
   // Tailwind CSS plugin (sorts class names)
-  plugins: ["prettier-plugin-tailwindcss"],
+  plugins: ['prettier-plugin-tailwindcss'],
 };

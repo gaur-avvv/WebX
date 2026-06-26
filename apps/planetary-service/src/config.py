@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Returns cached settings singleton."""
-    return Settings()  # type: ignore[call-arg]
+    return Settings()
 
 
 settings = get_settings()

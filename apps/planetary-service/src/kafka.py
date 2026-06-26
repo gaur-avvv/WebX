@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import structlog
-from aiokafka import AIOKafkaProducer
+from aiokafka import AIOKafkaProducer  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from .config import settings
@@ -48,7 +49,7 @@ async def close_kafka_producer() -> None:
         _producer = None
 
 
-async def publish_event(topic: str, key: str, value: dict) -> None:
+async def publish_event(topic: str, key: str, value: dict[str, Any]) -> None:
     if _producer is None:
         log.warning("Kafka producer not available — event dropped", topic=topic)
         return

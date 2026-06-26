@@ -71,9 +71,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 /** Fetches the real-time ISS position and crew information */
 export async function fetchISSPosition(): Promise<ISSPosition> {
-  const res = await fetchJson<ApiResponse<ISSPosition>>(
-    `${SATELLITE_API}/api/v1/iss/position`,
-  );
+  const res = await fetchJson<ApiResponse<ISSPosition>>(`${SATELLITE_API}/api/v1/iss/position`);
   return res.data;
 }
 

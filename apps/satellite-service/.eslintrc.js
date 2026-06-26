@@ -1,9 +1,9 @@
 module.exports = {
   root: true,
-  extends: ["@zenith/eslint-config"],
+  extends: ['@zenith/eslint-config'],
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: ["./tsconfig.json"],
+    project: ['./tsconfig.json'],
   },
-  ignorePatterns: ["src/__tests__/**/*", "**/*.test.ts", "**/*.spec.ts"],
+  ignorePatterns: ['src/__tests__/**/*', '**/*.test.ts', '**/*.spec.ts'],
 };

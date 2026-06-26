@@ -22,12 +22,7 @@ import logger from './lib/logger';
 // ─────────────────────────────────────────────
 // Validate required environment variables at startup
 // ─────────────────────────────────────────────
-const REQUIRED_ENV = [
-  'DATABASE_URL',
-  'REDIS_URL',
-  'KAFKA_BROKERS',
-  'JWT_SECRET',
-] as const;
+const REQUIRED_ENV = ['DATABASE_URL', 'REDIS_URL', 'KAFKA_BROKERS', 'JWT_SECRET'] as const;
 
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
@@ -132,8 +127,12 @@ async function main(): Promise<void> {
     }, 30_000);
   };
 
-  process.on('SIGTERM', () => { void shutdown('SIGTERM'); });
-  process.on('SIGINT', () => { void shutdown('SIGINT'); });
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason) => {

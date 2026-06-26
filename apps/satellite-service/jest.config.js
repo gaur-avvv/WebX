@@ -8,9 +8,12 @@ module.exports = {
     '^@zenith/shared-types$': '<rootDir>/../../packages/shared-types/src/index.ts',
   },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: './tsconfig.json',
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: './tsconfig.json',
+      },
+    ],
   },
   collectCoverageFrom: [
     'src/**/*.ts',

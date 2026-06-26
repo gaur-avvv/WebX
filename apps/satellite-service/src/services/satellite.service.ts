@@ -26,8 +26,7 @@ import { parseTLE, propagateToGeodetic, predictPasses, computeOrbitPath } from '
 import logger from '../lib/logger';
 import { Errors } from '../middleware/error-handler';
 
-const CELESTRAK_API_URL =
-  process.env['CELESTRAK_API_URL'] ?? 'https://celestrak.org';
+const CELESTRAK_API_URL = process.env['CELESTRAK_API_URL'] ?? 'https://celestrak.org';
 
 // ─────────────────────────────────────────────
 // CelesTrak GP API Response Types

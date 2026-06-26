@@ -40,8 +40,7 @@ interface OpenNotifyAstronautsResponse {
   people: Array<{ name: string; craft: string }>;
 }
 
-const ISS_POSITION_URL =
-  process.env['OPENNOTIFY_API_URL'] ?? 'http://api.open-notify.org';
+const ISS_POSITION_URL = process.env['OPENNOTIFY_API_URL'] ?? 'http://api.open-notify.org';
 
 const CACHE_KEY_ISS = 'zenith:iss:position';
 const CACHE_KEY_CREW = 'zenith:iss:crew';
@@ -58,10 +57,7 @@ export async function getISSPosition(): Promise<ISSPosition> {
   if (cached) return cached;
 
   // 2. Fetch from OpenNotify
-  const [position, crew] = await Promise.all([
-    fetchISSPosition(),
-    fetchISSCrew(),
-  ]);
+  const [position, crew] = await Promise.all([fetchISSPosition(), fetchISSCrew()]);
 
   const issData: ISSPosition = {
     coordinate: {
@@ -71,9 +67,7 @@ export async function getISSPosition(): Promise<ISSPosition> {
     },
     timestamp: new Date(position.timestamp * 1000).toISOString(),
     crewCount: crew.number,
-    crew: crew.people.map(
-      (p): AstronautInfo => ({ name: p.name, craft: p.craft }),
-    ),
+    crew: crew.people.map((p): AstronautInfo => ({ name: p.name, craft: p.craft })),
   };
 
   // 3. Cache for 5 seconds (OpenNotify updates ~5s)

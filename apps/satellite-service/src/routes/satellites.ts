@@ -55,14 +55,14 @@ const OrbitPathQuerySchema = z.object({
 // Middleware: parse + validate :noradId
 // ─────────────────────────────────────────────
 
-function parseNoradId(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): void {
+function parseNoradId(req: Request, _res: Response, next: NextFunction): void {
   const result = NoradIdSchema.safeParse(req.params['noradId']);
   if (!result.success) {
-    next(Errors.badRequest(`Invalid NORAD ID: ${result.error.issues[0]?.message ?? 'must be a number'}`));
+    next(
+      Errors.badRequest(
+        `Invalid NORAD ID: ${result.error.issues[0]?.message ?? 'must be a number'}`,
+      ),
+    );
     return;
   }
   // Store parsed value for downstream handlers

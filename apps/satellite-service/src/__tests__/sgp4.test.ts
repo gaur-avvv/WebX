@@ -8,7 +8,13 @@
  * Reference epoch used: ISS TLE from 2024-03-01 (a recent, well-known epoch)
  */
 
-import { parseTLE, propagateToGeodetic, computeLookAngles, predictPasses, computeOrbitPath } from '../../src/lib/sgp4';
+import {
+  parseTLE,
+  propagateToGeodetic,
+  computeLookAngles,
+  predictPasses,
+  computeOrbitPath,
+} from '../../src/lib/sgp4';
 
 // ─────────────────────────────────────────────
 // Known ISS TLE (public domain, from CelesTrak 2024-03-01)
@@ -155,7 +161,7 @@ describe('SGP4 Propagation Engine', () => {
       record = r;
     });
 
-    const NEW_YORK = { latitude: 40.7128, longitude: -74.0060, altitude: 10 };
+    const NEW_YORK = { latitude: 40.7128, longitude: -74.006, altitude: 10 };
 
     it('should return an array of passes', () => {
       const passes = predictPasses(record, NEW_YORK, new Date('2024-03-01T00:00:00.000Z'), 7);
@@ -172,7 +178,11 @@ describe('SGP4 Propagation Engine', () => {
     it('should filter out passes below minimum elevation', () => {
       const minElevation = 20;
       const passes = predictPasses(
-        record, NEW_YORK, new Date('2024-03-01T00:00:00.000Z'), 7, minElevation,
+        record,
+        NEW_YORK,
+        new Date('2024-03-01T00:00:00.000Z'),
+        7,
+        minElevation,
       );
       passes.forEach((pass) => {
         expect(pass.maxElevationDeg).toBeGreaterThanOrEqual(minElevation);
@@ -243,7 +253,7 @@ describe('SGP4 Propagation Engine', () => {
       const minutesAhead = 60;
       const minutesBehind = 30;
       const stepSeconds = 60;
-      const expectedPoints = (minutesAhead + minutesBehind) + 1; // approx
+      const expectedPoints = minutesAhead + minutesBehind + 1; // approx
       const path = computeOrbitPath(
         record,
         new Date('2024-03-01T12:00:00.000Z'),

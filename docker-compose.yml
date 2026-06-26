@@ -1,6 +1,6 @@
 ###############################################################################
 # Project Zenith — Docker Compose (Local Development)
-# 
+#
 # This file provisions the complete local infrastructure stack:
 #   - PostgreSQL 16 (primary + read replica)
 #   - Redis 7 (cluster mode via single node for local dev)
@@ -58,7 +58,6 @@ volumes:
 # SERVICES
 # ─────────────────────────────────────────────
 services:
-
   # ───────────────────────────────
   # DATABASE: PostgreSQL 16 Primary
   # ───────────────────────────────
@@ -287,7 +286,7 @@ services:
       - ./infra/docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     ports:
       - "5672:5672"
-      - "15672:15672"  # Management UI
+      - "15672:15672" # Management UI
     networks:
       - zenith-net
     healthcheck:

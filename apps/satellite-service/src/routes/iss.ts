@@ -16,7 +16,7 @@ export const issRouter = Router();
 /** Stricter rate limit on ISS endpoint to respect OpenNotify limits */
 const issRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 60,             // 60 req/min per IP (1/sec)
+  max: 60, // 60 req/min per IP (1/sec)
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {

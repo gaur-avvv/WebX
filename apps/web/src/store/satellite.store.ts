@@ -84,18 +84,14 @@ export const useSatelliteStore = create<SatelliteState>()(
         setObserverLocation: (coord, name = 'Custom Location') =>
           set({ observerLocation: coord, observerLocationName: name }),
 
-        clearObserverLocation: () =>
-          set({ observerLocation: null, observerLocationName: '' }),
+        clearObserverLocation: () => set({ observerLocation: null, observerLocationName: '' }),
 
         trackSatellite: (noradId, name) =>
           set((state) => {
             const exists = state.trackedSatellites.find((s) => s.noradId === noradId);
             if (exists) return state;
             return {
-              trackedSatellites: [
-                ...state.trackedSatellites,
-                { noradId, name, isTracking: true },
-              ],
+              trackedSatellites: [...state.trackedSatellites, { noradId, name, isTracking: true }],
             };
           }),
 

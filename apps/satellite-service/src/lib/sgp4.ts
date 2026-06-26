@@ -90,12 +90,7 @@ export function parseTLE(name: string, line1: string, line2: string): SatelliteR
     }
 
     // Guard against NaN values from malformed but structurally-valid TLEs
-    if (
-      isNaN(satrec.no) ||
-      isNaN(satrec.ecco) ||
-      isNaN(satrec.inclo) ||
-      isNaN(satrec.nodeo)
-    ) {
+    if (isNaN(satrec.no) || isNaN(satrec.ecco) || isNaN(satrec.inclo) || isNaN(satrec.nodeo)) {
       return null;
     }
 
@@ -144,9 +139,7 @@ export function propagateToGeodetic(
   const altitudeKm = geodeticRad.height;
 
   // Velocity magnitude
-  const velocityKmPerSec = Math.sqrt(
-    velocityEci.x ** 2 + velocityEci.y ** 2 + velocityEci.z ** 2,
-  );
+  const velocityKmPerSec = Math.sqrt(velocityEci.x ** 2 + velocityEci.y ** 2 + velocityEci.z ** 2);
 
   // Convert radians to degrees
   const latitudeDeg = geodeticRad.latitude * DEG_PER_RAD;
@@ -247,7 +240,7 @@ export function predictPasses(
   const passes: SatellitePass[] = [];
   const endTimeMs = startTime.getTime() + durationDays * 24 * 3600 * 1000;
   const COARSE_STEP_MS = 30_000; // 30 seconds
-  const FINE_STEP_MS = 1_000;   // 1 second
+  const FINE_STEP_MS = 1_000; // 1 second
 
   let prevElevDeg = -Infinity;
   let inPass = false;
@@ -394,7 +387,7 @@ function refineMaxElevation(
 export function computeOrbitPath(
   record: SatelliteRecord,
   referenceTime: Date = new Date(),
-  minutesAhead: number = 0,  // 0 = auto (one full orbital period)
+  minutesAhead: number = 0, // 0 = auto (one full orbital period)
   minutesBehind: number = 30,
   stepSeconds: number = 60,
 ): OrbitPathPoint[] {
@@ -452,8 +445,7 @@ export function estimateVisualMagnitude(
 ): number {
   // Simplified diffuse sphere phase function
   const phaseRad = phaseAngleDeg * (Math.PI / 180);
-  const phaseFunction =
-    (Math.sin(phaseRad) + (Math.PI - phaseRad) * Math.cos(phaseRad)) / Math.PI;
+  const phaseFunction = (Math.sin(phaseRad) + (Math.PI - phaseRad) * Math.cos(phaseRad)) / Math.PI;
 
   return stdMag + 5 * Math.log10(rangeKm / 1000) - 2.5 * Math.log10(phaseFunction);
 }

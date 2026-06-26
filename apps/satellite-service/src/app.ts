@@ -125,7 +125,7 @@ export function createApp(): Application {
   // ─────────────────────────────────────────────
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500,                  // max 500 requests per window per IP
+    max: 500, // max 500 requests per window per IP
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: {

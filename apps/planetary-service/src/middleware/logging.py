@@ -4,7 +4,7 @@ import time
 import uuid
 
 import structlog
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -14,7 +14,7 @@ log = structlog.get_logger(__name__)
 class StructlogMiddleware(BaseHTTPMiddleware):
     """Middleware that logs each request/response using structlog."""
 
-    async def dispatch(self, request: Request, call_next: object) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = request.headers.get("X-Request-Id", str(uuid.uuid4()))
         start = time.perf_counter()
 
@@ -26,7 +26,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         )
 
         try:
-            response: Response = await call_next(request)  # type: ignore[arg-type]
+            response: Response = await call_next(request)
         except Exception as exc:
             log.error("Unhandled request error", exc_info=exc)
             raise

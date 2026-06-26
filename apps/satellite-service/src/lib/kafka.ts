@@ -27,10 +27,12 @@ export async function createKafkaProducer(): Promise<() => Promise<void>> {
       initialRetryTime: 300,
       retries: 8,
     },
-    logCreator: () => ({ log }) => {
-      const { message, ...extra } = log;
-      logger.debug(extra, `[Kafka] ${message}`);
-    },
+    logCreator:
+      () =>
+      ({ log }) => {
+        const { message, ...extra } = log;
+        logger.debug(extra, `[Kafka] ${message}`);
+      },
   });
 
   producer = kafka.producer({

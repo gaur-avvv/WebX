@@ -96,7 +96,9 @@ export const errorHandler: ErrorRequestHandler = (
     status: 500,
     detail:
       process.env['NODE_ENV'] === 'development'
-        ? (err instanceof Error ? err.message : String(err))
+        ? err instanceof Error
+          ? err.message
+          : String(err)
         : 'An unexpected error occurred. Please try again later.',
     instance: req.path,
     requestId,
@@ -119,13 +121,7 @@ export const Errors = {
     ),
 
   badRequest: (detail: string) =>
-    new AppError(
-      400,
-      'Bad Request',
-      detail,
-      'https://zenith.api/errors/bad-request',
-      detail,
-    ),
+    new AppError(400, 'Bad Request', detail, 'https://zenith.api/errors/bad-request', detail),
 
   upstream: (service: string, detail: string) =>
     new AppError(

@@ -97,9 +97,11 @@ export function GlobeView() {
           const position = Cesium.Cartesian3.fromDegrees(
             pos.coordinate.longitude,
             pos.coordinate.latitude,
-            pos.coordinate.altitude ?? pos.altitudeKm * 1000
+            pos.coordinate.altitude ?? pos.altitudeKm * 1000,
           );
-          entity.position = new Cesium.ConstantPositionProperty(position) as unknown as Cesium.PositionProperty;
+          entity.position = new Cesium.ConstantPositionProperty(
+            position,
+          ) as unknown as Cesium.PositionProperty;
         }
       });
       animationId = requestAnimationFrame(updateLoop);
@@ -112,7 +114,7 @@ export function GlobeView() {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 w-full h-full bg-black"
+      className="absolute inset-0 h-full w-full bg-black"
       style={{ zIndex: 0 }}
     />
   );

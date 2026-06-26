@@ -35,8 +35,15 @@ export const metadata: Metadata = {
   description:
     'Real-time cosmic radar platform. Track the ISS, satellites, and planetary bodies live on an interactive 3D globe.',
   keywords: [
-    'satellite tracking', 'ISS tracker', 'real-time orbit', 'space visualization',
-    'CesiumJS globe', 'NASA Horizons', 'TLE propagation', 'SGP4', 'planetary ephemeris',
+    'satellite tracking',
+    'ISS tracker',
+    'real-time orbit',
+    'space visualization',
+    'CesiumJS globe',
+    'NASA Horizons',
+    'TLE propagation',
+    'SGP4',
+    'planetary ephemeris',
   ],
   authors: [{ name: 'Project Zenith Team' }],
   creator: 'Project Zenith',

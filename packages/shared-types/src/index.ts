@@ -169,17 +169,17 @@ export interface AstronautInfo {
 
 /** Solar system body identifier */
 export type SolarSystemBodyId =
-  | "sun"
-  | "mercury"
-  | "venus"
-  | "earth"
-  | "moon"
-  | "mars"
-  | "jupiter"
-  | "saturn"
-  | "uranus"
-  | "neptune"
-  | "pluto";
+  | 'sun'
+  | 'mercury'
+  | 'venus'
+  | 'earth'
+  | 'moon'
+  | 'mars'
+  | 'jupiter'
+  | 'saturn'
+  | 'uranus'
+  | 'neptune'
+  | 'pluto';
 
 /** Planetary ephemeris data from NASA Horizons */
 export interface PlanetaryEphemeris {
@@ -212,7 +212,7 @@ export interface PlanetaryEphemeris {
 // ─────────────────────────────────────────────
 
 /** User role enum */
-export type UserRole = "GUEST" | "OBSERVER" | "ADMIN";
+export type UserRole = 'GUEST' | 'OBSERVER' | 'ADMIN';
 
 /** User account DTO (safe for API exposure — no password hash) */
 export interface UserDTO {
@@ -275,18 +275,18 @@ export interface ObservingConditions {
 
 /** Kafka/WebSocket event types */
 export type EventType =
-  | "ISS_POSITION_UPDATE"
-  | "SATELLITE_POSITION_UPDATE"
-  | "SATELLITE_PASS_ALERT"
-  | "PLANETARY_DATA_UPDATE"
-  | "TLE_REFRESH";
+  | 'ISS_POSITION_UPDATE'
+  | 'SATELLITE_POSITION_UPDATE'
+  | 'SATELLITE_PASS_ALERT'
+  | 'PLANETARY_DATA_UPDATE'
+  | 'TLE_REFRESH';
 
 /** Base WebSocket event envelope */
 export interface WebSocketEvent<T = unknown> {
   type: EventType;
   payload: T;
   timestamp: ISODateString;
-  source: "satellite-service" | "planetary-service" | "notification-service";
+  source: 'satellite-service' | 'planetary-service' | 'notification-service';
 }
 
 /** Real-time ISS position update event */

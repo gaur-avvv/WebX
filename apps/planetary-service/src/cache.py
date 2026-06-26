@@ -29,7 +29,7 @@ async def init_redis() -> None:
 async def close_redis() -> None:
     global _redis
     if _redis:
-        await _redis.aclose()
+        await _redis.close()
         _redis = None
 
 

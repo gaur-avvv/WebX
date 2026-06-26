@@ -10,12 +10,14 @@ export const KafkaSchemas = {
     timestamp: z.number(),
   }),
   SATELLITE_POSITIONS: z.object({
-    satellites: z.array(z.object({
-      noradId: z.number(),
-      latitude: z.number(),
-      longitude: z.number(),
-      altitude: z.number(),
-    })),
+    satellites: z.array(
+      z.object({
+        noradId: z.number(),
+        latitude: z.number(),
+        longitude: z.number(),
+        altitude: z.number(),
+      }),
+    ),
     timestamp: z.number(),
   }),
   PLANETARY_EPHEMERIS: z.object({
@@ -35,5 +37,5 @@ export const KafkaSchemas = {
 };
 
 export type KafkaMessage = {
-  [K in keyof typeof KafkaSchemas]: z.infer<typeof KafkaSchemas[K]>;
+  [K in keyof typeof KafkaSchemas]: z.infer<(typeof KafkaSchemas)[K]>;
 };

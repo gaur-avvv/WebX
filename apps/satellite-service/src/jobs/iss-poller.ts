@@ -35,7 +35,9 @@ export function startISSPoller(): () => void {
     }
 
     if (running) {
-      setTimeout(() => { void poll(); }, intervalMs);
+      setTimeout(() => {
+        void poll();
+      }, intervalMs);
     }
   };
 
