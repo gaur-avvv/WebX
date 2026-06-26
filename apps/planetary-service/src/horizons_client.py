@@ -87,7 +87,7 @@ class HorizonsClient:
     def __init__(self) -> None:
         self._client: httpx.AsyncClient | None = None
 
-    async def __aenter__(self) -> "HorizonsClient":
+    async def __aenter__(self) -> HorizonsClient:
         self._client = httpx.AsyncClient(
             base_url=settings.NASA_HORIZONS_API_URL,
             timeout=httpx.Timeout(30.0, connect=10.0),

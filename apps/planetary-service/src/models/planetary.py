@@ -5,10 +5,9 @@ These are the data contracts between the planetary service and its consumers.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 # All valid solar system body IDs
 SolarSystemBodyId = Literal[

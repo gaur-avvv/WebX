@@ -1,7 +1,7 @@
 """Pytest configuration and shared fixtures for planetary-service tests."""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.fixture

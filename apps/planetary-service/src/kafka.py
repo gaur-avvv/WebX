@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Dict, Any
 
 import structlog
 from aiokafka import AIOKafkaProducer
@@ -20,8 +19,8 @@ _producer: AIOKafkaProducer | None = None
 class PlanetaryEphemeris(BaseModel):
     """Schema for planetary position updates."""
     bodyName: str
-    coordinates: Dict[str, float] = Field(..., description="x, y, z in AU")
-    velocity: Dict[str, float] = Field(..., description="vx, vy, vz in AU/day")
+    coordinates: dict[str, float] = Field(..., description="x, y, z in AU")
+    velocity: dict[str, float] = Field(..., description="vx, vy, vz in AU/day")
     epoch: str
 
 KAFKA_TOPICS = {

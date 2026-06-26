@@ -9,8 +9,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from ..cache import get_redis
-from ..database import get_engine
 from ..config import settings
+from ..database import get_engine
 
 router = APIRouter(tags=["Health"])
 
@@ -37,7 +37,6 @@ async def liveness() -> dict[str, str]:
 async def readiness() -> HealthResponse:
     """Returns 200 only when PostgreSQL and Redis are reachable."""
     from datetime import UTC, datetime
-    import asyncio
 
     checks: dict[str, Literal["ok", "error"]] = {}
 

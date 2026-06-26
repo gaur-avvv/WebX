@@ -7,16 +7,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import structlog
-from fastapi import APIRouter, HTTPException, Request, Path
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Path, Request
 
-from ..horizons_client import HorizonsClient, HORIZONS_BODY_IDS
+from ..horizons_client import HORIZONS_BODY_IDS, HorizonsClient
 from ..models.planetary import (
-    SolarSystemBodyId,
     ALL_BODY_IDS,
     AllPlanetsResponse,
-    SinglePlanetResponse,
     PlanetaryEphemerisResponse,
+    SinglePlanetResponse,
+    SolarSystemBodyId,
 )
 
 log = structlog.get_logger(__name__)

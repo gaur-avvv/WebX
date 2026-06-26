@@ -6,8 +6,8 @@ System API (https://ssd.jpl.nasa.gov/horizons/), with async Redis caching
 and Kafka event publishing.
 """
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 import structlog
 from fastapi import FastAPI, Request
@@ -16,13 +16,13 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from .cache import close_redis, init_redis
 from .config import settings
-from .database import init_db, close_db
-from .cache import init_redis, close_redis
-from .kafka import init_kafka_producer, close_kafka_producer
-from .routers import health, planets
+from .database import close_db, init_db
+from .kafka import close_kafka_producer, init_kafka_producer
 from .middleware.logging import StructlogMiddleware
 from .middleware.request_id import RequestIdMiddleware
+from .routers import health, planets
 
 log = structlog.get_logger(__name__)
 
@@ -32,7 +32,7 @@ log = structlog.get_logger(__name__)
 # ─────────────────────────────────────────────
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Manage application lifecycle: connect/disconnect all external services."""
     log.info("🚀 Starting Zenith Planetary Service...", version=settings.VERSION)
 
