@@ -23,7 +23,7 @@ ENV NODE_ENV=development
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
-RUN npm ci
+RUN npm pkg delete scripts.prepare && npm ci
 
 COPY --from=pruner /app/out/full/ .
 
@@ -41,7 +41,7 @@ ENV NODE_ENV=production
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
-RUN npm ci
+RUN npm pkg delete scripts.prepare && npm ci
 
 COPY --from=pruner /app/out/full/ .
 

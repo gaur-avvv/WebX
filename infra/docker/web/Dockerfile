@@ -34,7 +34,7 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
 
 # Install all deps (including devDeps)
-RUN npm ci
+RUN npm pkg delete scripts.prepare && npm ci
 
 # Copy pruned source
 COPY --from=pruner /app/out/full/ .
@@ -56,7 +56,7 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
 
 # Install production + dev deps needed for build
-RUN npm ci
+RUN npm pkg delete scripts.prepare && npm ci
 
 COPY --from=pruner /app/out/full/ .
 
