@@ -14,9 +14,8 @@ WORKDIR /app
 
 # Download modules first (layer caching)
 # go.sum may not exist in fresh repos — go mod tidy will generate it
-COPY go.mod ./
-COPY go.su[m] ./
-RUN go mod download || true
+COPY go.mod go.su[m] ./
+RUN go mod download && go mod verify
 
 # Copy source and build
 COPY . .
@@ -36,8 +35,7 @@ WORKDIR /app
 # Install Air for hot reloading
 RUN go install github.com/air-verse/air@latest
 
-COPY go.mod ./
-COPY go.su[m] ./
+COPY go.mod go.su[m] ./
 RUN go mod download || true
 
 COPY . .

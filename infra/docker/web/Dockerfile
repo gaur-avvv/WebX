@@ -49,7 +49,6 @@ CMD ["npx", "turbo", "run", "dev", "--filter=@zenith/web"]
 # Stage 4: Builder (production build)
 # ─────────────────────────────────────────────
 FROM base AS builder
-ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=pruner /app/out/json/ .
@@ -61,6 +60,7 @@ RUN npm pkg delete scripts.prepare && npm ci
 COPY --from=pruner /app/out/full/ .
 
 # Build the Next.js app
+ENV NODE_ENV=production
 RUN npx turbo run build --filter=@zenith/web
 
 # ─────────────────────────────────────────────

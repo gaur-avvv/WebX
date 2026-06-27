@@ -37,7 +37,6 @@ CMD ["turbo", "run", "dev", "--filter=@zenith/satellite-service"]
 # Builder — compile TypeScript
 # ─────────────────────────────────────────────
 FROM base AS builder
-ENV NODE_ENV=production
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
@@ -47,6 +46,9 @@ COPY --from=pruner /app/out/full/ .
 
 RUN npx --no-install prisma generate --schema=apps/satellite-service/prisma/schema.prisma
 RUN npx turbo run build --filter=@zenith/satellite-service
+
+ENV NODE_ENV=production
+RUN npm prune --omit=dev
 
 # ─────────────────────────────────────────────
 # Production runner
