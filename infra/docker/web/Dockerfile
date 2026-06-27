@@ -63,6 +63,9 @@ COPY --from=pruner /app/out/full/ .
 ENV NODE_ENV=production
 RUN npx turbo run build --filter=@zenith/web
 
+# Ensure public directory exists to avoid COPY failures in next stage
+RUN mkdir -p apps/web/public
+
 # ─────────────────────────────────────────────
 # Stage 5: Production runner (minimal image)
 # ─────────────────────────────────────────────
